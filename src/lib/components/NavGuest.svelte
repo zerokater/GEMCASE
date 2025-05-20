@@ -1,24 +1,9 @@
-<script lang="ts">
-  function openSteamLoginPopup(event: MouseEvent) {
-    event.preventDefault(); // Prevent normal navigation
-    const width = 700;
-    const height = 650;
-    const left = window.screenX + (window.innerWidth - width) / 2;
-    const top = window.screenY + (window.innerHeight - height) / 2;
-    window.open(
-      '/steam/login',
-      'Steam Login',
-      `width=${width},height=${height},left=${left},top=${top},resizable,scrollbars=yes`
-    );
-  }
-</script>
-
 <nav>
   <div class="container">
     <a href="/">
       <img class="logo" src="/img/gemcase-logo.svg" alt="gemcase logo">
     </a>
-    <a class="signin" href="/steam/login" on:click={openSteamLoginPopup}>
+    <a class="signin" href="/steam/login">
       SIGN IN
     </a>
   </div>

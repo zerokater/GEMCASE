@@ -1,4 +1,3 @@
-// src/routes/steam/auth/+server.ts
 import type { RequestHandler } from '@sveltejs/kit';
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
@@ -29,7 +28,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
   // Extract SteamID from openid.claimed_id
   const claimedId = params.get('openid.claimed_id') || '';
-  const match = claimedId.match(/\/id\/(\d+)$/) || claimedId.match(/\/openid\/id\/(\d+)$/);
+  const match = claimedId.match(/(\d{17})/); // SteamIDs are 17 digits
   const steamid = match ? match[1] : null;
   if (!steamid) {
     return new Response('Could not extract SteamID', { status: 400 });
@@ -42,25 +41,9 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
     sameSite: 'lax'
   });
 
-  // Return HTML that closes popup and reloads main window
-  return new Response(`
-    <html>
-      <head>
-        <title>Login Successful</title>
-      </head>
-      <body>
-        <script>
-          if (window.opener) {
-            window.opener.location.reload();
-            window.close();
-          } else {
-            window.location = '/';
-          }
-        </script>
-        <p>Login successful. You can close this window.</p>
-      </body>
-    </html>
-  `, {
-    headers: { 'Content-Type': 'text/html' }
+  // Just redirect to home page (no popup logic)
+  return new Response(null, {
+    status: 302,
+    headers: { Location: '/' }
   });
 };
