@@ -35,10 +35,14 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
     return new Response('Could not extract SteamID', { status: 400 });
   }
 
-  // Set the steamid cookie
-  cookies.set('steamid', steamid, { path: '/' });
+  // Set the steamid cookie (secure/sameSite for production)
+  cookies.set('steamid', steamid, {
+    path: '/',
+    secure: true,
+    sameSite: 'lax'
+  });
 
-  // Return an HTML page that reloads the parent and closes the popup
+  // Return HTML that closes popup and reloads main window
   return new Response(`
     <html>
       <head>

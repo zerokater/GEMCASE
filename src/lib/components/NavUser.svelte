@@ -1,45 +1,54 @@
 <script lang="ts">
-    export let steamid: string;
+  import { supabase } from '$lib/supabaseClient';
+  export let steamid: string;
+
+  let gems: number | null = null;
+
+  // Fetch gems from Supabase when steamid is available
+  $: if (steamid) {
+    loadGems();
+  }
+
+  async function loadGems() {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('gems')
+      .eq('steamid', steamid)
+      .single();
+
+    gems = user?.gems ?? 0;
+  }
 </script>
 
 <nav>
     <span style="display:none">{steamid}</span>
     <div class="container">
         <a href="/">
-            <img class="logo" src="/img/gemcase-logo.svg" alt="gemcase logo">
+            <img class="logo" src="/img/gemcase-logo.svg"  alt="gemcase logo">
         </a>
 
         <div class="menu">
-
             <div class="gems">
                 <a class="deposit" href="/">
                     <p>DEPOSIT</p>
                 </a>
                 <div class="balance">
                     <img src="/img/gem.svg" alt="gems icon">
-                    <p>250.00</p>
+                    <p>{gems === null ? '...' : gems.toFixed(2)}</p>
                 </div>
-    
             </div>
-
             <a class="linkstyle" href="/">
                 <img src="/img/inventory.svg" alt="inventory icon">
                 <div class="items"></div>
             </a>
-
             <a class="linkstyle" href="/">
                 <img src="/img/user.svg" alt="user icon">
             </a>
-        
         </div>
     </div>
 </nav>
 
-
-
-
 <style>
-
     .menu{
         display: flex;
         flex-direction: row;
@@ -70,14 +79,11 @@
         background-color: var(--background);
         gap: 12px;
         border-radius: 0px 4px 4px 0px;
-
-
     }
 
     .balance img{
         width: 8px;
     }
-
 
     .linkstyle{
         padding: 10px;
@@ -120,7 +126,6 @@
         display: block;
         width: 220px;
     }
-
 
     nav{
         padding: 24px 0px 24px 0px;

@@ -3,11 +3,37 @@
   import NavGuest from '$lib/components/NavGuest.svelte';
   import NavUser from '$lib/components/NavUser.svelte';
   import Footer from '$lib/components/Footer.svelte';
+  import CompleteProfileModal from '$lib/components/CompleteProfileModal.svelte';
+  import { supabase } from '$lib/supabaseClient';
   import "../app.css";
   export let data: LayoutData;
+
+  let showModal = false;
+
+  $: if (data.steamid) {
+    checkUser();
+  }
+
+  async function checkUser() {
+    if (!data.steamid) return;
+    const { data: user } = await supabase
+      .from('users')
+      .select('steamid')
+      .eq('steamid', data.steamid)
+      .single();
+    showModal = !user;
+  }
+
+  function closeModal() {
+    showModal = false;
+    location.reload(); // To pick up new data after saving
+  }
 </script>
 
 {#if data.steamid}
+  {#if showModal}
+    <CompleteProfileModal steamid={data.steamid} onComplete={closeModal} />
+  {/if}
   <NavUser steamid={data.steamid} />
   <p>SteamID: {data.steamid}</p>
   <a href="/steam/logout">
