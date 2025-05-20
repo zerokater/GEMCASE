@@ -23,7 +23,7 @@
       trade_url: tradeUrl,
       is_18: is18,
       accepted_terms_privacy: acceptTermsPrivacy,
-      gems: 100
+      gems: 0
     });
     loading = false;
     if (supaError) {

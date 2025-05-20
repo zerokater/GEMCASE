@@ -26,7 +26,7 @@
 
   function closeModal() {
     showModal = false;
-    location.reload(); // To pick up new data after saving
+    location.reload();
   }
 </script>
 
@@ -35,7 +35,6 @@
     <CompleteProfileModal steamid={data.steamid} onComplete={closeModal} />
   {/if}
   <NavUser steamid={data.steamid} />
-  <p>SteamID: {data.steamid}</p>
   <a href="/steam/logout">
     <button>Log out</button>
   </a>
@@ -45,5 +44,4 @@
 {/if}
 
 <slot />
-
 <Footer />

@@ -1,5 +1,4 @@
 <script lang="ts">
-  // Function to open Steam login in a popup
   function openSteamLoginPopup(event: MouseEvent) {
     event.preventDefault(); // Prevent normal navigation
     const width = 700;
@@ -19,8 +18,6 @@
     <a href="/">
       <img class="logo" src="/img/gemcase-logo.svg" alt="gemcase logo">
     </a>
-
-    <!-- Use a button for the popup, styled the same as your link -->
     <a class="signin" href="/steam/login" on:click={openSteamLoginPopup}>
       SIGN IN
     </a>
@@ -38,12 +35,10 @@
     align-items: center;
     justify-content: space-between;
   }
-
   .logo{
     display: block;
     width: 220px;
   }
-
   .signin{
     background-color: var(--accent);
     color: var(--background);
@@ -58,7 +53,6 @@
     align-items: center;
     justify-content: center;
   }
-
   nav{
     padding: 24px 0px 24px 0px;
     width: 1200px;
