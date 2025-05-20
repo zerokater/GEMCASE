@@ -4,7 +4,6 @@
 
   let gems: number | null = null;
 
-  // Fetch gems from Supabase when steamid is available
   $: if (steamid) {
     loadGems();
   }
@@ -26,7 +25,6 @@
         <a href="/">
             <img class="logo" src="/img/gemcase-logo.svg"  alt="gemcase logo">
         </a>
-
         <div class="menu">
             <div class="gems">
                 <a class="deposit" href="/">
@@ -43,6 +41,9 @@
             </a>
             <a class="linkstyle" href="/">
                 <img src="/img/user.svg" alt="user icon">
+            </a>
+            <a class="logout-btn" href="/steam/logout">
+              <button>Log out</button>
             </a>
         </div>
     </div>
@@ -131,5 +132,18 @@
         padding: 24px 0px 24px 0px;
         width: 1200px;
         margin: 0 auto;
+    }
+
+    .logout-btn button {
+      background-color: var(--background);
+      color: var(--grey);
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 24px;
+      cursor: pointer;
+      font-size: 15px;
+      margin-left: 12px;
+      transition: background 0.2s;
     }
 </style>

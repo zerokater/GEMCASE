@@ -35,12 +35,8 @@
     <CompleteProfileModal steamid={data.steamid} onComplete={closeModal} />
   {/if}
   <NavUser steamid={data.steamid} />
-  <a href="/steam/logout">
-    <button>Log out</button>
-  </a>
 {:else}
   <NavGuest />
-  <p>No SteamID found (not logged in)</p>
 {/if}
 
 <slot />
