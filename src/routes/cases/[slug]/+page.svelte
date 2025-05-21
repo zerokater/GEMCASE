@@ -5,7 +5,8 @@
     case_skins: {
       skins: {
         id: string;
-        name: string;
+        weapon: string;
+        skin: string;
         image_url: string;
         price: number;
       };
@@ -14,22 +15,27 @@
     kase: any;
   };
 
-  // ---- CONFIG ----
-  const VISIBLE_COUNT = 35;      // Try any value >=10
+  // ==== CONFIG ====
+  const VISIBLE_COUNT = 100;             // Any value (even or odd)
+  const WINNER_OFFSET_FROM_END = 6;     // How many from end
   const SKIN_WIDTH = 140;
   const SKIN_GAP = 24;
-  const WINNER_POSITION = VISIBLE_COUNT - 6; // Winner is 6 before the end
-  const SPIN_DURATION = 4000;
-  const ALIGN_DURATION = 360;
+  let SPIN_DURATION = 2000;
+  let ALIGN_DURATION = 180;
   const SPIN_EASE = 'cubic-bezier(.15,.86,.47,1)';
   const ALIGN_EASE = 'cubic-bezier(.38,1.31,.4,1)';
   const OFFSET_RATIO = 0.8;
 
-  // ---- INTERNAL STATE ----
-  let allSkins = data.case_skins.map(s => s.skins);
+  // ==== MATH ====
   $: windowWidth = (SKIN_WIDTH + SKIN_GAP) * VISIBLE_COUNT - SKIN_GAP;
   $: CENTER_POSITION = Math.floor(VISIBLE_COUNT / 2);
+  $: CENTER_OFFSET = VISIBLE_COUNT % 2 === 0
+    ? -((SKIN_WIDTH + SKIN_GAP) / 2)
+    : 0;
+  $: WINNER_POSITION = VISIBLE_COUNT - WINNER_OFFSET_FROM_END;
 
+  // ==== STATE ====
+  let allSkins = data.case_skins.map(s => s.skins);
   let stripSkins = [];
   let winner = null;
   let spinning = false;
@@ -93,8 +99,8 @@
       stripRef.style.transform = `translateX(0px)`;
     }
 
-    // Animate so winner lands under center line
-    const move = -((SKIN_WIDTH + SKIN_GAP) * (WINNER_POSITION - CENTER_POSITION)) + mainOffset;
+    // Animate so winner lands under center line (with even/odd fix!)
+    const move = -((SKIN_WIDTH + SKIN_GAP) * (WINNER_POSITION - CENTER_POSITION)) + mainOffset + CENTER_OFFSET;
     requestAnimationFrame(() => {
       if (stripRef) {
         stripRef.style.transition = `transform ${SPIN_DURATION}ms ${SPIN_EASE}`;
@@ -124,8 +130,8 @@
       <div class="strip" bind:this={stripRef}>
         {#each stripSkins as skin, i}
           <div class="skin {winner && i === WINNER_POSITION ? 'winner' : ''}">
-            <img src={skin.image_url} alt={skin.name} />
-            <div>{skin.name}</div>
+            <img src={skin.image_url} alt={skin.weapon} />
+            <div>{skin.weapon}</div>
           </div>
         {/each}
       </div>
@@ -137,8 +143,8 @@
   {#if winner && !spinning}
     <div class="result">
       <h3>You won:</h3>
-      <img src={winner.image_url} alt={winner.name} />
-      <div><b>{winner.name}</b> ({winner.price} coins)</div>
+      <img src={winner.image_url} alt={winner.weapon} />
+      <div><b>{winner.weapon}</b> ({winner.price} coins)</div>
     </div>
   {/if}
 </main>
@@ -181,7 +187,6 @@
     position: relative;
     width: 100%;
     height: 100%;
-    background: #e5eefe;
   }
   .strip {
     display: flex;
