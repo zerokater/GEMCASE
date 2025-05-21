@@ -20,11 +20,13 @@
   const WINNER_OFFSET_FROM_END = 6;     // How many from end
   const SKIN_WIDTH = 140;
   const SKIN_GAP = 24;
-  let SPIN_DURATION = 2000;
-  let ALIGN_DURATION = 180;
-  const SPIN_EASE = 'cubic-bezier(.15,.86,.47,1)';
+  let SPIN_DURATION = 6000;
+  let ALIGN_DURATION = 360;
+  const SPIN_EASE = 'cubic-bezier(.12,1,.39,1)';
+
+
   const ALIGN_EASE = 'cubic-bezier(.38,1.31,.4,1)';
-  const OFFSET_RATIO = 0.8;
+  const OFFSET_RATIO = 0.95;
 
   // ==== MATH ====
   $: windowWidth = (SKIN_WIDTH + SKIN_GAP) * VISIBLE_COUNT - SKIN_GAP;
