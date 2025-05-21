@@ -14,25 +14,29 @@
     kase: any;
   };
 
-  let allSkins = data.case_skins.map(s => s.skins);
-
-  // Config
-  const VISIBLE_COUNT = 25;
+  // ---- CONFIG ----
+  const VISIBLE_COUNT = 35;      // Try any value >=10
   const SKIN_WIDTH = 140;
   const SKIN_GAP = 24;
-  const SPIN_DISTANCE = 14; // how many positions to move left per spin
-  const ANIMATION_DURATION = 2000;
-  const centerPos = Math.floor(VISIBLE_COUNT / 2);
+  const WINNER_POSITION = VISIBLE_COUNT - 6; // Winner is 6 before the end
+  const SPIN_DURATION = 4000;
+  const ALIGN_DURATION = 360;
+  const SPIN_EASE = 'cubic-bezier(.15,.86,.47,1)';
+  const ALIGN_EASE = 'cubic-bezier(.38,1.31,.4,1)';
+  const OFFSET_RATIO = 0.8;
 
+  // ---- INTERNAL STATE ----
+  let allSkins = data.case_skins.map(s => s.skins);
   $: windowWidth = (SKIN_WIDTH + SKIN_GAP) * VISIBLE_COUNT - SKIN_GAP;
+  $: CENTER_POSITION = Math.floor(VISIBLE_COUNT / 2);
 
   let stripSkins = [];
   let winner = null;
-  let winnerIndex = -1;
   let spinning = false;
-  let translateX = 0;
+  let stripRef;
+  let mainOffset = 0;
+  let alignActive = false;
 
-  // Helper to pick a winner with chance
   function pickWinner() {
     let total = data.case_skins.reduce((sum, s) => sum + s.chance, 0);
     let rand = Math.random() * total;
@@ -46,59 +50,70 @@
     return allSkins[allSkins.length - 1];
   }
 
-  // Fill window with randoms for idle state
   function initStrip() {
     stripSkins = Array.from({ length: VISIBLE_COUNT }, () =>
       allSkins[Math.floor(Math.random() * allSkins.length)]
     );
     winner = null;
-    winnerIndex = -1;
-    translateX = 0;
+    mainOffset = 0;
+    alignActive = false;
+    tick().then(() => {
+      if (stripRef) {
+        stripRef.style.transition = 'none';
+        stripRef.style.transform = `translateX(0px)`;
+      }
+    });
   }
   initStrip();
 
   async function spin() {
     if (spinning) return;
     spinning = true;
+    alignActive = false;
 
-    // 1. Winner
     winner = pickWinner();
 
-    // 2. Build new strip: [left randoms] [winner] [right randoms]
-    // Always spin through SPIN_DISTANCE cards before winner lands in center
-    const before = SPIN_DISTANCE + centerPos;
-    const after = VISIBLE_COUNT - centerPos - 1;
-    let tempStrip = [];
-    for (let i = 0; i < before; i++) tempStrip.push(allSkins[Math.floor(Math.random() * allSkins.length)]);
-    tempStrip.push(winner);
-    for (let i = 0; i < after; i++) tempStrip.push(allSkins[Math.floor(Math.random() * allSkins.length)]);
-    stripSkins = tempStrip;
-    winnerIndex = before; // winner index in strip
+    // Offset: random -0.8 ... +0.8 of a skin width
+    mainOffset = (Math.random() * 2 - 1) * OFFSET_RATIO * (SKIN_WIDTH + SKIN_GAP) * 0.5;
 
-    // 3. Set up animation
-    const stripEl = document.querySelector('.strip');
-    translateX = 0;
-    stripEl.style.transition = 'none';
-    stripEl.style.transform = `translateX(0px)`;
+    // Build new strip with winner at WINNER_POSITION
+    let tempStrip = [];
+    for (let i = 0; i < WINNER_POSITION; i++)
+      tempStrip.push(allSkins[Math.floor(Math.random() * allSkins.length)]);
+    tempStrip.push(winner);
+    for (let i = WINNER_POSITION + 1; i < VISIBLE_COUNT; i++)
+      tempStrip.push(allSkins[Math.floor(Math.random() * allSkins.length)]);
+    stripSkins = tempStrip;
+
     await tick();
 
-    // 4. Animate the strip so winner lands at center
-    translateX = -((SKIN_WIDTH + SKIN_GAP) * (winnerIndex - centerPos));
+    // Reset transform instantly
+    if (stripRef) {
+      stripRef.style.transition = 'none';
+      stripRef.style.transform = `translateX(0px)`;
+    }
+
+    // Animate so winner lands under center line
+    const move = -((SKIN_WIDTH + SKIN_GAP) * (WINNER_POSITION - CENTER_POSITION)) + mainOffset;
     requestAnimationFrame(() => {
-      stripEl.style.transition = `transform ${ANIMATION_DURATION}ms cubic-bezier(.23,1.02,.43,.99)`;
-      stripEl.style.transform = `translateX(${translateX}px)`;
+      if (stripRef) {
+        stripRef.style.transition = `transform ${SPIN_DURATION}ms ${SPIN_EASE}`;
+        stripRef.style.transform = `translateX(${move}px)`;
+      }
     });
 
-    // 5. After animation, show just the window, winner centered
+    // Second align animation to perfect center
     setTimeout(() => {
-      // The winner is now at centerPos, show only [centerPos-(centerPos), ..., centerPos+(VISIBLE_COUNT-centerPos-1)]
-      const start = winnerIndex - centerPos;
-      stripSkins = stripSkins.slice(start, start + VISIBLE_COUNT);
-      winnerIndex = centerPos;
-      stripEl.style.transition = 'none';
-      stripEl.style.transform = `translateX(0px)`;
-      spinning = false;
-    }, ANIMATION_DURATION + 50);
+      alignActive = true;
+      if (stripRef) {
+        stripRef.style.transition = `transform ${ALIGN_DURATION}ms ${ALIGN_EASE}`;
+        stripRef.style.transform = `translateX(${move - mainOffset}px)`;
+      }
+      setTimeout(() => {
+        spinning = false;
+        alignActive = false;
+      }, ALIGN_DURATION + 60);
+    }, SPIN_DURATION + 40);
   }
 </script>
 
@@ -106,9 +121,9 @@
   <section>
     <div class="center-line" style="left: 50%;"></div>
     <div class="strip-window" style="width: {windowWidth}px;">
-      <div class="strip">
+      <div class="strip" bind:this={stripRef}>
         {#each stripSkins as skin, i}
-          <div class="skin {winner && i === winnerIndex ? 'winner' : ''}">
+          <div class="skin {winner && i === WINNER_POSITION ? 'winner' : ''}">
             <img src={skin.image_url} alt={skin.name} />
             <div>{skin.name}</div>
           </div>
@@ -144,7 +159,6 @@
     border-radius: 8px;
     overflow: hidden;
   }
-
   .center-line{
     height: 100%;
     background-color: var(--accent, #4bd865);
@@ -176,7 +190,6 @@
     justify-content: center;
     height: 100%;
     will-change: transform;
-    transition: transform 0.2s;
   }
   .skin {
     border-radius: 6px;
