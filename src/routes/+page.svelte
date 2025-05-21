@@ -41,10 +41,15 @@
     background-color: var(--darkgrey);
     border-radius: 8px;
   }
+
+
+
   section {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     grid-template-rows: repeat(3, auto);
     gap: 24px;
   }
+
+  
 </style>
