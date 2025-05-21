@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import { scale } from 'svelte/transition';
 
   export let data: {
     case_skins: {
@@ -11,20 +12,20 @@
         price: number;
       };
       chance: number;
+      gem_eligible?: boolean;
+      profitable?: boolean;
     }[];
-    kase: any;
+    kase: { price: number; };
   };
 
   // ==== CONFIG ====
-  const VISIBLE_COUNT = 100;             // Any value (even or odd)
-  const WINNER_OFFSET_FROM_END = 6;     // How many from end
+  const VISIBLE_COUNT = 100;
+  const WINNER_OFFSET_FROM_END = 6;
   const SKIN_WIDTH = 140;
   const SKIN_GAP = 24;
   let SPIN_DURATION = 6000;
   let ALIGN_DURATION = 360;
   const SPIN_EASE = 'cubic-bezier(.12,1,.39,1)';
-
-
   const ALIGN_EASE = 'cubic-bezier(.38,1.31,.4,1)';
   const OFFSET_RATIO = 0.95;
 
@@ -44,6 +45,16 @@
   let stripRef;
   let mainOffset = 0;
   let alignActive = false;
+  let showModal = false; // for modal state
+
+  // === CATEGORY COLOR LOGIC ===
+  function getSkinCategory(skinId: string) {
+    const entry = data.case_skins.find(cs => cs.skins.id === skinId);
+    if (!entry) return 'normal';
+    if (entry.gem_eligible) return 'gem';
+    if (entry.profitable) return 'profitable';
+    return 'not-profitable';
+  }
 
   function pickWinner() {
     let total = data.case_skins.reduce((sum, s) => sum + s.chance, 0);
@@ -65,6 +76,7 @@
     winner = null;
     mainOffset = 0;
     alignActive = false;
+    showModal = false;
     tick().then(() => {
       if (stripRef) {
         stripRef.style.transition = 'none';
@@ -76,6 +88,7 @@
 
   async function spin() {
     if (spinning) return;
+    showModal = false; // close modal if open
     spinning = true;
     alignActive = false;
 
@@ -120,35 +133,53 @@
       setTimeout(() => {
         spinning = false;
         alignActive = false;
+        showModal = true; // show the modal after spin completes
       }, ALIGN_DURATION + 60);
     }, SPIN_DURATION + 40);
+  }
+
+  function sellSkin() {
+    showModal = false;
+    // ...do your sell logic here (API, supabase etc)
   }
 </script>
 
 <main>
   <section>
+    {#if showModal && winner}
+      <div class="modal-bg" />
+    {/if}
     <div class="center-line" style="left: 50%;"></div>
     <div class="strip-window" style="width: {windowWidth}px;">
       <div class="strip" bind:this={stripRef}>
         {#each stripSkins as skin, i}
-          <div class="skin {winner && i === WINNER_POSITION ? 'winner' : ''}">
+          <div
+            class="skin {i === WINNER_POSITION ? 'highlight' : ''} {getSkinCategory(skin.id)}"
+          >
             <img src={skin.image_url} alt={skin.weapon} />
             <div>{skin.weapon}</div>
+            <div style="font-size: 0.93em; color:#bbb;">{skin.skin}</div>
           </div>
         {/each}
       </div>
+      {#if winner && !spinning && showModal}
+        <div
+          class="result-modal"
+          in:scale={{ duration: 320, start: 0.8 }}
+        >
+          <img src={winner.image_url} alt={winner.weapon} />
+          <div style="font-size:1em;"><b>{winner.weapon}</b></div>
+          <div style="color:#aaa; margin-bottom:2px;">{winner.skin}</div>
+          <button class="sell-btn" on:click={sellSkin}>
+            Sell for {winner.price} gems
+          </button>
+        </div>
+      {/if}
     </div>
   </section>
   <button class="spin-btn" on:click={spin} disabled={spinning}>
-    {spinning ? "Spinning..." : "Spin"}
+    {spinning ? `Opening...` : `Open for ${data.kase.price} gems`}
   </button>
-  {#if winner && !spinning}
-    <div class="result">
-      <h3>You won:</h3>
-      <img src={winner.image_url} alt={winner.weapon} />
-      <div><b>{winner.weapon}</b> ({winner.price} coins)</div>
-    </div>
-  {/if}
 </main>
 
 <style>
@@ -158,8 +189,9 @@
   }
   section {
     width: 100%;
-    background-color: var(--dark, #181a1b);
-    height: 400px;
+    background-color: var(--dark);
+    border: 1pt solid var(--accent);
+    height: 300px;
     position: relative;
     display: flex;
     justify-content: center;
@@ -167,9 +199,17 @@
     border-radius: 8px;
     overflow: hidden;
   }
+  .modal-bg {
+    position: absolute;
+    z-index: 19;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(20, 22, 28, 0.25);
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
+    transition: background 0.2s;
+  }
   .center-line{
     height: 100%;
-    background-color: var(--accent, #4bd865);
     width: 2px;
     position: absolute;
     z-index: 2;
@@ -177,6 +217,7 @@
     transform: translateX(-50%);
     pointer-events: none;
     opacity: 0.9;
+    background: radial-gradient(circle, var(--border) 0%, transparent 80%);
   }
   .strip-window {
     display: flex;
@@ -208,16 +249,16 @@
     justify-content: center;
     flex-shrink: 0;
     transition: all 0.2s;
-    background: #23272b;
-    box-shadow: 0 1px 8px #0005;
+    padding: 12px;
   }
-  .skin.winner {
-    border: 3px solid #4bd865;
-    box-shadow: 0 0 24px #41ffae, 0 1px 8px #0005;
-    transform: scale(1.1);
-    transition: all 0.2s;
-    z-index: 5;
+  .skin.highlight {
+    opacity: 1;
+    z-index: 2;
   }
+  /* Category coloring */
+  .skin.gem { }
+  .skin.profitable { }
+  .skin.not-profitable { }
   .skin img {
     width: 140px;
     margin-bottom: 8px;
@@ -245,21 +286,50 @@
   .spin-btn:hover:enabled {
     background: #24b047;
   }
-  .result {
-    margin: 32px auto 0 auto;
-    background: #222a;
-    padding: 24px 40px;
-    border-radius: 12px;
+  .result-modal {
+    position: absolute;
+    left: 50%;
+    top: 53%;
+    transform: translate(-50%, -50%);
+    background: #181c1faa;
+    padding: 14px 16px;
+    border-radius: 13px;
+    z-index: 20;
     text-align: center;
     color: #fff;
-    max-width: 340px;
-    box-shadow: 0 4px 32px #0005;
+    box-shadow: 0 8px 36px #0007, 0 2px 8px #0005;
+    border: 2px solid var(--accent, #4bd865);
+    min-width: 190px;
+    max-width: 76vw;
+    font-size: 0.96em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
   }
-  .result img {
-    margin: 14px auto;
-    max-width: 90px;
+  .result-modal img {
+    margin: 6px auto 4px auto;
+    max-width: 65px;
     display: block;
     border-radius: 6px;
+  }
+  .sell-btn {
+    margin: 0 auto;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 1em;
+    background: var(--accent, #4bd865);
+    color: #181c1f;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 1px 8px #0003;
+    transition: background 0.2s;
+    margin-top: 8px;
+  }
+  .sell-btn:hover {
+    background: #24b047;
   }
   @media only screen and (max-width: 1100px) {
     main {
@@ -268,6 +338,11 @@
     }
     .strip-window {
       max-width: 100vw;
+    }
+    .result-modal {
+      padding: 10px 1vw;
+      min-width: unset;
+      font-size: 0.95em;
     }
   }
 </style>
