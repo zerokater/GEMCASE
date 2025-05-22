@@ -1,6 +1,8 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { scale } from 'svelte/transition';
+  import { supabase } from '$lib/supabaseClient';
+  import { gems } from '$lib/gemsStore';
 
   export let data: {
     case_skins: {
@@ -16,6 +18,7 @@
       profitable?: boolean;
     }[];
     kase: { price: number; };
+    steamid?: string;
   };
 
   // ==== CONFIG ====
@@ -45,9 +48,12 @@
   let stripRef;
   let mainOffset = 0;
   let alignActive = false;
-  let showModal = false; // for modal state
+  let showModal = false;
 
-  // === CATEGORY COLOR LOGIC ===
+  // GEMS
+  let localGems = 0;
+  const unsubscribe = gems.subscribe(val => { localGems = val; });
+
   function getSkinCategory(skinId: string) {
     const entry = data.case_skins.find(cs => cs.skins.id === skinId);
     if (!entry) return 'normal';
@@ -86,11 +92,52 @@
   }
   initStrip();
 
+  async function reloadGems() {
+    if (!data.steamid) return;
+    const { data: user } = await supabase
+      .from('users')
+      .select('gems')
+      .eq('steamid', data.steamid)
+      .single();
+    if (user && user.gems !== undefined) gems.set(parseFloat(user.gems));
+  }
+
   async function spin() {
     if (spinning) return;
-    showModal = false; // close modal if open
+    if (!data.steamid) {
+      alert('You need to login!');
+      return;
+    }
+    if (localGems < data.kase.price) {
+      alert('Not enough gems!');
+      return;
+    }
+
+    // Fully reset state (always!)
+    showModal = false;
+    winner = null;
+    await tick();
+
+    // RESET STRIP to 0 before doing anything
+    if (stripRef) {
+      stripRef.style.transition = 'none';
+      stripRef.style.transform = `translateX(0px)`;
+    }
+
     spinning = true;
     alignActive = false;
+
+    // Subtract gems via RPC before spin
+    const { error } = await supabase.rpc('subtract_gems', {
+      user_steamid: data.steamid,
+      gems_to_subtract: data.kase.price
+    });
+    if (error) {
+      spinning = false;
+      alert('Failed to subtract gems.');
+      return;
+    }
+    await reloadGems();
 
     winner = pickWinner();
 
@@ -108,12 +155,6 @@
 
     await tick();
 
-    // Reset transform instantly
-    if (stripRef) {
-      stripRef.style.transition = 'none';
-      stripRef.style.transform = `translateX(0px)`;
-    }
-
     // Animate so winner lands under center line (with even/odd fix!)
     const move = -((SKIN_WIDTH + SKIN_GAP) * (WINNER_POSITION - CENTER_POSITION)) + mainOffset + CENTER_OFFSET;
     requestAnimationFrame(() => {
@@ -123,7 +164,6 @@
       }
     });
 
-    // Second align animation to perfect center
     setTimeout(() => {
       alignActive = true;
       if (stripRef) {
@@ -138,9 +178,18 @@
     }, SPIN_DURATION + 40);
   }
 
-  function sellSkin() {
+  async function sellSkin() {
     showModal = false;
-    // ...do your sell logic here (API, supabase etc)
+    if (!data.steamid || !winner) return;
+    const { error } = await supabase.rpc('add_gems', {
+      user_steamid: data.steamid,
+      gems_to_add: winner.price
+    });
+    if (error) {
+      alert('Failed to add gems for selling.');
+      return;
+    }
+    await reloadGems();
   }
 </script>
 
