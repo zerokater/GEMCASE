@@ -39,6 +39,7 @@
 <nav>
   <div class="container">
     <a href="/">
+      <img class="logo-icon" src="/img/gem.svg" alt="gem logo">
       <img class="logo" src="/img/gemcase-logo.svg" alt="gemcase logo" />
     </a>
     <div class="menu">
@@ -53,7 +54,7 @@
           </p>
         </div>
       </div>
-      <a class="linkstyle" href="/">
+      <a class="linkstyle inv" href="/">
         <img src="/img/inventory.svg" alt="inventory icon" />
         <div class="items"></div>
       </a>
@@ -77,6 +78,7 @@
   .gems{
       display: flex;
   }
+
 
   .deposit{
       padding: 10px 20px;
@@ -167,6 +169,11 @@
       margin: 0 auto;
   }
 
+
+.logout-btn{
+  display: none;
+}
+
   .logout-btn button {
     background-color: var(--background);
     color: var(--grey);
@@ -178,5 +185,27 @@
     font-size: 15px;
     margin-left: 12px;
     transition: background 0.2s;
+    display: none;
   }
+
+  .logo-icon{
+    display: none;
+  }
+
+  @media only screen and (max-width: 1150px) {
+  nav {
+    padding: 14px 14px;
+    width: 100%;
+  }
+
+  .logo{
+    display: none;
+  }
+
+  .logo-icon{
+    display: block;
+    width: 20px;
+  }
+}
+
 </style>
